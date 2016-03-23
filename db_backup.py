@@ -22,18 +22,16 @@ def menu():
 def delete_old_backups(keep=7, store=None):
   timestamp = datetime.datetime.now().strftime("%Y-%m-%d")
   cut_date = datetime.datetime.now() - datetime.timedelta(days=keep)
-  all_dumps = os.listdir(store)
 
-  cut_date = cut_date.strftime("%Y-%m-%d")
-  cut_date = datetime.datetime.strptime(cut_date, "%Y-%m-%d")
+  # converge cut_date from to proper fomat
+  cut_date = datetime.datetime.strptime(cut_date.strftime("%Y-%m-%d"), "%Y-%m-%d")
 
-  for dump in all_dumps:
-    if dump.endswith('sql.gz'):
-      dump_date = dump.split('.')[1]
-      dump = datetime.datetime.strptime(dump_date, "%Y-%m-%d")
-      print dump
-      # print 'Dump date: ', dump.split(".")[1]
-      # print dump_date
+  for dump_file in os.listdir(store):
+    if dump_file.endswith('sql.gz'):
+      dump_date = datetime.datetime.strptime(dump_file.split('.')[1], "%Y-%m-%d")
+      if dump_date < cut_date:
+        # os.remove(os.path.join(store, dump_file))
+        print os.path.join(store, dump_file)
 
 def backup(databases=None, store=None, user=None, password=None, host=None):
   # get current date
