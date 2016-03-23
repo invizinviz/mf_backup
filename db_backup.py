@@ -30,8 +30,7 @@ def delete_old_backups(keep=7, store=None):
     if dump_file.endswith('sql.gz'):
       dump_date = datetime.datetime.strptime(dump_file.split('.')[1], "%Y-%m-%d")
       if dump_date < cut_date:
-        # os.remove(os.path.join(store, dump_file))
-        print os.path.join(store, dump_file)
+        os.remove(os.path.join(store, dump_file))
 
 def backup(databases=None, store=None, user=None, password=None, host=None):
   # get current date
@@ -50,8 +49,10 @@ def backup(databases=None, store=None, user=None, password=None, host=None):
         dump_cmd += ' -p' + password
       dump_cmd += ' -e --opt -c ' + db + ' | gzip > ' + db_backup_path + '.gz'
       logging.info("Dump db, %s to %s." % (db, db_backup_path))
-      # os.popen(dump_cmd)
-      print dump_cmd
+      try:
+        os.popen(dump_cmd)
+      except(Exception):
+        logging.exception('Backups failed!\n')
 
 def main(argv):
   # Set default vals
@@ -62,31 +63,42 @@ def main(argv):
   host      = None
   store     = None
 
-  opts, args = getopt.getopt(argv, "hn:k:d:t:u:p:s:", ["help", "keep=", "databases=", "store=", "user=", "password=", "host="])
+  # set logging configs
+  logging.basicConfig(filename='backups.log', level=logging.DEBUG)
 
-  if len(argv) == 0:
+  try:
+    opts, args = getopt.getopt(argv, "hn:k:d:t:u:p:s:", ["help", "keep=", "databases=", "store=", "user=", "password=", "host="])
+
+    if len(argv) == 0:
+      menu()
+      sys.exit()
+
+    for opt, arg in opts:
+      if opt in ("-h", "--help"):
+        menu()
+        sys.exit()
+      elif opt in ('-k', '--keep'):
+        keep = int(arg)
+      elif opt in ('-d', '--databases'):
+        databases = string.split(arg, ',')
+      elif opt in ('-t', '--store'):
+        store = arg
+      elif opt in ('-u', '--user'):
+        user = arg
+      elif opt in ('-p', '--password'):
+        password = arg
+      elif opt in ('-s', '--host'):
+        host = arg
+  except getopt.GetoptError, msg:
+    logging.warning(msg)
     menu()
     sys.exit()
 
-  for opt, arg in opts:
-    if opt in ("-h", "--help"):
-      menu()
-      sys.exit()
-    elif opt in ('-k', '--keep'):
-      keep = int(arg)
-    elif opt in ('-d', '--databases'):
-      databases = string.split(arg, ',')
-    elif opt in ('-t', '--store'):
-      store = arg
-    elif opt in ('-u', '--user'):
-      user = arg
-    elif opt in ('-p', '--password'):
-      password = arg
-    elif opt in ('-s', '--host'):
-      host = arg
-
-  # backup(databases, store, user, password, host)
-  delete_old_backups(keep, store)
+  try:
+    backup(databases, store, user, password, host)
+    delete_old_backups(keep, store)
+  except(Exception):
+    logging.exception('Backups failed!!!\n')
 
 if __name__ == "__main__":
   main(sys.argv[1:])
