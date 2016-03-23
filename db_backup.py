@@ -5,8 +5,7 @@ import os
 import string
 import getopt
 import logging
-
-from datetime import datetime
+import datetime
 
 def menu():
   menu = ["db_backup.py [-hkbdups]\n"]
@@ -20,12 +19,25 @@ def menu():
   message = string.join(menu)
   print message
 
-# def delete_old_backups(keep):
+def delete_old_backups(keep=7, store=None):
+  timestamp = datetime.datetime.now().strftime("%Y-%m-%d")
+  cut_date = datetime.datetime.now() - datetime.timedelta(days=keep)
+  all_dumps = os.listdir(store)
 
+  cut_date = cut_date.strftime("%Y-%m-%d")
+  cut_date = datetime.datetime.strptime(cut_date, "%Y-%m-%d")
+
+  for dump in all_dumps:
+    if dump.endswith('sql.gz'):
+      dump_date = dump.split('.')[1]
+      dump = datetime.datetime.strptime(dump_date, "%Y-%m-%d")
+      print dump
+      # print 'Dump date: ', dump.split(".")[1]
+      # print dump_date
 
 def backup(databases=None, store=None, user=None, password=None, host=None):
   # get current date
-  timestamp = datetime.now().strftime("%Y-%m-%d")
+  timestamp = datetime.datetime.now().strftime("%Y-%m-%d")
 
   if databases != None:
     for db in databases:
@@ -40,7 +52,7 @@ def backup(databases=None, store=None, user=None, password=None, host=None):
         dump_cmd += ' -p' + password
       dump_cmd += ' -e --opt -c ' + db + ' | gzip > ' + db_backup_path + '.gz'
       logging.info("Dump db, %s to %s." % (db, db_backup_path))
-      os.popen(dump_cmd)
+      # os.popen(dump_cmd)
       print dump_cmd
 
 def main(argv):
@@ -75,7 +87,8 @@ def main(argv):
     elif opt in ('-s', '--host'):
       host = arg
 
-  backup(databases, store, user, password, host)
+  # backup(databases, store, user, password, host)
+  delete_old_backups(keep, store)
 
 if __name__ == "__main__":
   main(sys.argv[1:])
