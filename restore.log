@@ -1,0 +1,10 @@
+ERROR:root:Restore failed!!!
+Traceback (most recent call last):
+  File "./db_restore.py", line 63, in main
+    restore(databases, restore_day, store, user, password, host)
+UnboundLocalError: local variable 'restore_day' referenced before assignment
+ERROR:root:Restore failed!!!
+Traceback (most recent call last):
+  File "./db_restore.py", line 63, in main
+    restore(databases, restore_day, store, user, password, host)
+UnboundLocalError: local variable 'restore_day' referenced before assignment
