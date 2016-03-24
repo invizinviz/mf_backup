@@ -19,11 +19,34 @@ def menu():
   message = string.join(menu)
   print message
 
-def restore(databases=None, restore_day=None, store=None, user=None, password=None, host=None):
-  for db_name in databases:
-    restore_cmd = 'zcat ' + store + os.sep + db_name + '.' + restore_day + '.sql.gz' + ' | ' + 'mysql -u ' + user + ' -p' + password + ' -h ' + "'" + host + "'" + ' ' + db_name
+def is_db_file_exist(databases, restore_day, store):
+  tested_dbs = []
+  suffix = '.' + restore_day + '.sql.gz'
+  all_dbs = os.listdir(store)
 
-    print restore_cmd
+  for db_from_request in databases:
+    if db_from_request + suffix in all_dbs:
+      exist = True
+    else:
+      exist = False
+    tested_dbs.append({'exist': exist, 'db_path': store + os.sep + db_from_request + suffix, 'db_name': db_from_request })
+
+  # will return list of dics
+  return tested_dbs
+
+
+
+def restore(databases=None, restore_day=None, store=None, user=None, password=None, host=None):
+  tested_dbs = is_db_file_exist(databases, restore_day, store)
+  for db_for_restore in tested_dbs:
+    if db_for_restore['exist'] == True:
+      restore_cmd = 'zcat ' + db_for_restore['db_path'] + ' | ' + 'mysql -u ' + user + ' -p' + password + ' -h ' + "'" + host + "'" + ' ' + db_for_restore['db_name']
+      # os.popen(restore_cmd)
+      print restore_cmd
+    else:
+      msg = 'The %s file is not exist.' % db_for_restore['db_path']
+      logging.warning(msg)
+
 
 def main(argv):
   # set default vals
@@ -34,10 +57,11 @@ def main(argv):
   host = None
 
   # set logging configs
-  logging.basicConfig(filename='restore.log', level=logging.DEBUG)
+  # logging.basicConfig(filename='restore.log', level=logging.DEBUG)
 
   opts, args = getopt.getopt(argv, 'hd:y:s:t:u:p:', ['help', 'databases=', 'day=', 'host=', 'user=', 'store=', 'password='])
 
+  # if no args exit and print menu
   if len(argv) == 0:
     menu()
     sys.exit()

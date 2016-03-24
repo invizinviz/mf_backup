@@ -19,19 +19,6 @@ def menu():
   message = string.join(menu)
   print message
 
-def delete_old_backups(keep=7, store=None):
-  timestamp = datetime.datetime.now().strftime("%Y-%m-%d")
-  cut_date = datetime.datetime.now() - datetime.timedelta(days=keep)
-
-  # converge cut_date from to proper fomat
-  cut_date = datetime.datetime.strptime(cut_date.strftime("%Y-%m-%d"), "%Y-%m-%d")
-
-  for dump_file in os.listdir(store):
-    if dump_file.endswith('sql.gz'):
-      dump_date = datetime.datetime.strptime(dump_file.split('.')[1], "%Y-%m-%d")
-      if dump_date < cut_date:
-        os.remove(os.path.join(store, dump_file))
-
 def backup(databases=None, store=None, user=None, password=None, host=None):
   # get current date
   timestamp = datetime.datetime.now().strftime("%Y-%m-%d")
@@ -49,11 +36,25 @@ def backup(databases=None, store=None, user=None, password=None, host=None):
         dump_cmd += ' -p' + password
       dump_cmd += ' -e --opt -c ' + db + ' | gzip > ' + db_backup_path + '.gz'
       logging.info("Dump db, %s to %s." % (db, db_backup_path))
-      try:
-        os.popen(dump_cmd)
-      except(Exception):
-        logging.exception('Backups failed!\n')
+      os.popen(dump_cmd)
 
+def delete_old_backups(keep=7, store=None):
+  timestamp = datetime.datetime.now().strftime("%Y-%m-%d")
+  cut_date = datetime.datetime.now() - datetime.timedelta(days=keep)
+
+  # converge cut_date from to proper fomat
+  cut_date = datetime.datetime.strptime(cut_date.strftime("%Y-%m-%d"), "%Y-%m-%d")
+
+  for dump_file in os.listdir(store):
+    if dump_file.endswith('sql.gz'):
+      dump_date = datetime.datetime.strptime(dump_file.split('.')[1], "%Y-%m-%d")
+      if dump_date < cut_date:
+        os.remove(os.path.join(store, dump_file))
+
+
+"""
+main method
+"""
 def main(argv):
   # Set default vals
   keep      = 7
@@ -89,6 +90,7 @@ def main(argv):
         password = arg
       elif opt in ('-s', '--host'):
         host = arg
+
   except getopt.GetoptError, msg:
     logging.warning(msg)
     menu()
@@ -97,6 +99,7 @@ def main(argv):
   try:
     backup(databases, store, user, password, host)
     delete_old_backups(keep, store)
+
   except(Exception):
     logging.exception('Backups failed!!!\n')
 
