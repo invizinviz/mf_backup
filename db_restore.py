@@ -49,6 +49,10 @@ def restore(databases=None, restore_day=None, store=None, user=None, password=No
 
 
 def main(argv):
+  # create pid file
+  pid = str(os.getpid())
+  pidfile = '/tmp/db_restore.pid'
+
   # set default vals
   databases = None
   store = None
@@ -56,7 +60,7 @@ def main(argv):
   password = None
   host = None
 
-  # set logging configs
+  # set logging configs, you can uncomment this line to save all logs in file
   # logging.basicConfig(filename='restore.log', level=logging.DEBUG)
 
   opts, args = getopt.getopt(argv, 'hd:y:s:t:u:p:', ['help', 'databases=', 'day=', 'host=', 'user=', 'store=', 'password='])
@@ -84,10 +88,18 @@ def main(argv):
     elif opt in ('-p', '--password'):
       password = arg
 
+  # check is process running
+  if os.path.isfile(pidfile):
+    print '%s file exist. Probably restore is already running' % pidfile
+    sys.exit()
+  file(pidfile, 'w').write(pid)
+
   try:
     restore(databases, restore_day, store, user, password, host)
   except(Exception):
     logging.exception('Restore failed!!!\n')
+  finally:
+    os.unlink(pidfile)
 
 if __name__ == '__main__':
   main(sys.argv[1:])

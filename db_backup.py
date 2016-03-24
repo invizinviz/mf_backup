@@ -56,6 +56,10 @@ def delete_old_backups(keep=7, store=None):
 main method
 """
 def main(argv):
+  # create pid file
+  pid = str(os.getpid())
+  pidfile = '/tmp/db_backup.pid'
+
   # Set default vals
   keep      = 7
   databases = None
@@ -64,8 +68,8 @@ def main(argv):
   host      = None
   store     = None
 
-  # set logging configs
-  logging.basicConfig(filename='backups.log', level=logging.DEBUG)
+  # set logging configs, you can uncomment this line to save all logs in file
+  # logging.basicConfig(filename='backups.log', level=logging.DEBUG)
 
   try:
     opts, args = getopt.getopt(argv, "hn:k:d:t:u:p:s:", ["help", "keep=", "databases=", "store=", "user=", "password=", "host="])
@@ -95,13 +99,20 @@ def main(argv):
     logging.warning(msg)
     menu()
     sys.exit()
+  
+  # chek if process is running
+  if os.path.isfile(pidfile):
+    print '%s file exist. Probably backup is already running.' % pidfile
+    sys.exit()
+  file(pidfile, 'w').write(pid)
 
   try:
     backup(databases, store, user, password, host)
     delete_old_backups(keep, store)
-
   except(Exception):
     logging.exception('Backups failed!!!\n')
+  finally:
+    os.unlink(pidfile)
 
 if __name__ == "__main__":
   main(sys.argv[1:])
